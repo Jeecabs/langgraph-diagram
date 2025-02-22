@@ -1,5 +1,3 @@
-# nodes.py
-
 from typing import Dict, Any
 import random
 from datetime import datetime
@@ -26,8 +24,9 @@ def data_ingestion_node(state: Dict[str, Any], config: Dict[str, Any]):
         "crm": mock_crm_data(),
         "desktop": mock_desktop_activity(),
         "customer_service": mock_customer_service_data(),
-        "feedback": state.get("user_feedback", {}),  # Updated key
+        "feedback": state.get("user_feedback", {}),
     }
+    time.sleep(3)  # Simulate data collection latency
     return {"raw_data": new_data}
 
 
@@ -35,13 +34,12 @@ def workflow_analysis_node(state: Dict[str, Any], config: Dict[str, Any]):
     """Analyze data patterns to find automation candidates"""
     data = state["raw_data"]
 
-    # Simple pattern detection for demo
     patterns = []
     if data["desktop"]["active_app"] == "report_generation":
         patterns.append("Daily report generation")
     if data["crm"]["orders"] > 15:
         patterns.append("High order volume processing")
-    time.sleep(2)
+    time.sleep(2)  # Preserved existing analysis delay
     return {"analysis": {"patterns": patterns, "timestamp": data["timestamp"]}}
 
 
@@ -67,27 +65,26 @@ def recommendation_node(state: Dict[str, Any], config: Dict[str, Any]):
                     "complexity": "Medium",
                 }
             )
-    time.sleep(2)
+    time.sleep(2)  # Preserved existing recommendation delay
     return {"recommendations": recs}
 
 
-def dashboard_ui_node(state: Dict[str, Any], config: Dict[str, Any]):
-    """Present recommendations to users (mock)"""
-    # In real implementation, this would trigger UI display
-    return {"ui_displayed": True}
-
-
-def workflow_presentation_node(state: Dict[str, Any], config: Dict[str, Any]):  # Renamed
+def workflow_presentation_node(state: Dict[str, Any], config: Dict[str, Any]):
     """Present workflow blueprints to users"""
-    return {"workflows_rendered": True}  # Updated key
+    time.sleep(2.5)  # Simulate UI rendering time
+    return {"workflows_rendered": True}
+
 
 def deployment_node(state: Dict[str, Any], config: Dict[str, Any]):
+    time.sleep(2)  # Simulate deployment process
     return {
         "deployed_at": datetime.now().isoformat(),
-        "deployed_workflows": [rec["name"] for rec in state["recommendations"]],  # Updated key
+        "deployed_workflows": [rec["name"] for rec in state["recommendations"]],
     }
 
+
 def feedback_node(state: Dict[str, Any], config: Dict[str, Any]):
+    time.sleep(1.5)  # Simulate feedback aggregation
     cycle_count = state.get("cycle_count", 0) + 1
     return {
         "user_feedback": {
@@ -97,13 +94,14 @@ def feedback_node(state: Dict[str, Any], config: Dict[str, Any]):
         "cycle_count": cycle_count
     }
 
+
 def human_review_node(state: Dict[str, Any], config: Dict[str, Any]):
     review_cycles = state.get("review_cycles", 0)
     if not config.get("auto_approve"):
         review_cycles += 1
     
     approval = random.random() < 0.8 if not config.get("auto_approve") else True
-    time.sleep(1)
+    time.sleep(1)  # Preserved existing review delay
     return {
         "approval_status": approval,
         "review_cycles": review_cycles
