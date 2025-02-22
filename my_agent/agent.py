@@ -1,5 +1,6 @@
 # agent.py
 
+import time
 from typing import TypedDict, Literal
 from langgraph.graph import StateGraph, END
 from my_agent.utils.state import AgentState
@@ -7,45 +8,45 @@ from my_agent.utils.nodes import (
     data_ingestion_node,
     workflow_analysis_node,
     recommendation_node,
-    dashboard_ui_node,
+    workflow_presentation_node,  # Renamed
     human_review_node,
     deployment_node,
-    feedback_node
+    feedback_node,
 )
+
 
 class GraphConfig(TypedDict):
     model_name: Literal["anthropic", "openai"]
     auto_approve: bool
-    max_cycles: int  # Add maximum cycle counter
+    max_cycles: int
 
-# Initialize the state graph with updated config
+
 workflow = StateGraph(AgentState, config_schema=GraphConfig)
 
-# Add nodes for each stage of the process
 workflow.add_node("data_ingestion", data_ingestion_node)
 workflow.add_node("workflow_analysis", workflow_analysis_node)
 workflow.add_node("automation_recommendation", recommendation_node)
-workflow.add_node("dashboard_ui", dashboard_ui_node)
+workflow.add_node("workflow_presentation", workflow_presentation_node)  # Renamed
 workflow.add_node("human_review", human_review_node)
 workflow.add_node("deploy_workflows", deployment_node)
 workflow.add_node("collect_feedback", feedback_node)
 
-# Set initial entry point
 workflow.set_entry_point("data_ingestion")
 
-# Main forward flow
+# Updated edge names
 workflow.add_edge("data_ingestion", "workflow_analysis")
 workflow.add_edge("workflow_analysis", "automation_recommendation")
-workflow.add_edge("automation_recommendation", "dashboard_ui")
-workflow.add_edge("dashboard_ui", "human_review")
+workflow.add_edge("automation_recommendation", "workflow_presentation")  # Changed
+workflow.add_edge("workflow_presentation", "human_review")  # Changed
 
-# Human review conditional flow with cycle limit
+
 def route_human_decision(state):
-    if state.get("approval"):
+    if state.get("approval_status"):  # Fixed key
         return "approved"
-    if state.get("review_cycles", 0) >= 3:  # Max 3 rejection cycles
+    if state.get("review_cycles", 0) >= 3:
         return "max_rejected"
     return "rejected"
+
 
 workflow.add_conditional_edges(
     "human_review",
@@ -53,24 +54,23 @@ workflow.add_conditional_edges(
     {
         "approved": "deploy_workflows",
         "rejected": "workflow_analysis",
-        "max_rejected": END  # Termination point for stuck workflows
-    }
+        "max_rejected": END,
+    },
 )
 
-# Deployment and feedback flow with cycle control
+
 def should_continue(state, config):
-    return "continue" if state.get("cycle_count", 0) < config["max_cycles"] else "end"
+
+    if state.get("cycle_count", 0) < 3:
+        time.sleep(10)
+        return "continue"
+    return "end"
+
 
 workflow.add_conditional_edges(
-    "collect_feedback",
-    should_continue,
-    {
-        "continue": "data_ingestion",
-        "end": END
-    }
+    "collect_feedback", should_continue, {"continue": "data_ingestion", "end": END}
 )
 
 workflow.add_edge("deploy_workflows", "collect_feedback")
 
-# Compile the final workflow
 graph = workflow.compile()

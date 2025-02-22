@@ -3,6 +3,7 @@
 from typing import Dict, Any
 import random
 from datetime import datetime
+import time  # For demo
 
 
 # Mock data generators
@@ -20,16 +21,13 @@ def mock_customer_service_data():
 
 
 def data_ingestion_node(state: Dict[str, Any], config: Dict[str, Any]):
-    """Mock data collection from various sources"""
-    # For demo, generate fresh mock data each cycle
     new_data = {
         "timestamp": datetime.now().isoformat(),
         "crm": mock_crm_data(),
         "desktop": mock_desktop_activity(),
         "customer_service": mock_customer_service_data(),
-        "feedback": state.get("feedback", {}),
+        "feedback": state.get("user_feedback", {}),  # Updated key
     }
-
     return {"raw_data": new_data}
 
 
@@ -43,7 +41,7 @@ def workflow_analysis_node(state: Dict[str, Any], config: Dict[str, Any]):
         patterns.append("Daily report generation")
     if data["crm"]["orders"] > 15:
         patterns.append("High order volume processing")
-
+    time.sleep(2)
     return {"analysis": {"patterns": patterns, "timestamp": data["timestamp"]}}
 
 
@@ -69,7 +67,7 @@ def recommendation_node(state: Dict[str, Any], config: Dict[str, Any]):
                     "complexity": "Medium",
                 }
             )
-
+    time.sleep(2)
     return {"recommendations": recs}
 
 
@@ -79,19 +77,20 @@ def dashboard_ui_node(state: Dict[str, Any], config: Dict[str, Any]):
     return {"ui_displayed": True}
 
 
+def workflow_presentation_node(state: Dict[str, Any], config: Dict[str, Any]):  # Renamed
+    """Present workflow blueprints to users"""
+    return {"workflows_rendered": True}  # Updated key
+
 def deployment_node(state: Dict[str, Any], config: Dict[str, Any]):
-    """Activate approved workflows"""
     return {
         "deployed_at": datetime.now().isoformat(),
-        "workflows": [rec["name"] for rec in state["recommendations"]],
+        "deployed_workflows": [rec["name"] for rec in state["recommendations"]],  # Updated key
     }
 
-
 def feedback_node(state: Dict[str, Any], config: Dict[str, Any]):
-    """Updated to use 'user_feedback' state key"""
     cycle_count = state.get("cycle_count", 0) + 1
     return {
-        "user_feedback": {  # Changed key
+        "user_feedback": {
             "satisfaction": random.randint(3, 5),
             "issues_reported": random.randint(0, 2)
         },
@@ -99,13 +98,13 @@ def feedback_node(state: Dict[str, Any], config: Dict[str, Any]):
     }
 
 def human_review_node(state: Dict[str, Any], config: Dict[str, Any]):
-    """Updated to use 'approval_status' state key"""
     review_cycles = state.get("review_cycles", 0)
     if not config.get("auto_approve"):
         review_cycles += 1
     
     approval = random.random() < 0.8 if not config.get("auto_approve") else True
+    time.sleep(1)
     return {
-        "approval_status": approval,  # Changed key
+        "approval_status": approval,
         "review_cycles": review_cycles
     }
